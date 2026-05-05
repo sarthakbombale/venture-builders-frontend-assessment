@@ -1,31 +1,45 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
-import { TextField, Button, Paper, Typography, Box, Alert } from '@mui/material';
+import { TextField, Button, Paper, Typography, Alert } from '@mui/material';
 
 export default function LoginForm() {
+  const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState({ username: 'emilys', password: 'emilyspassword' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Let the server handle the redirect to avoid the JSON parsing bug
-    const res = await signIn('credentials', {
-      username: form.username,
-      password: form.password,
-      callbackUrl: '/dashboard/users',
-      redirect: true, 
-    });
+    try {
+      const result = await signIn("credentials", {
+        username: form.username,
+        password: form.password,
+        redirect: true,
+        callbackUrl: "/dashboard/users",
+      });
 
-    if (res?.error) {
-      setError("Invalid username or password");
+      if (result?.error) {
+        setError("Invalid credentials. Please try again.");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Sign in failed", err);
+      setError("Login failed. Please try again.");
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%' }}>
